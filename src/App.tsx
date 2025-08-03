@@ -1,216 +1,176 @@
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react';
+import UserList from './components/UserList';
+import TodoApp from './components/TodoApp';
+import DataFetcher from './components/DataFetcher';
+import { formatData, doStuff, incrementCounter, logAndReturn } from './utils/helpers';
+import './App.css';
 
-interface User {
-  id: number
-  name: string
-  status: any
+// Bad: No proper interface, using any
+interface AppProps {
+  data?: any;
 }
 
-const users: User[] = [
-  { id: 1, name: 'João', status: 'active' },
-  { id: 2, name: 'Maria', status: 'inactive' },
-  { id: 3, name: 'Pedro', status: 'active' },
-]
+// Bad: Not using React.FC properly
+const App = (props: any) => {
+  // Bad: Too many state variables, poor naming
+  const [currentTab, setCurrentTab] = useState('users');
+  const [appData, setAppData] = useState<any>(null);
+  const [isVisible, setIsVisible] = useState(true);
+  const [userCount, setUserCount] = useState(0);
 
-function App() {
-  const [selectedUserId, setSelectedUserId] = useState<number | null>(null)
-  const [count, setCount] = useState(0)
-  const [isVisible, setIsVisible] = useState(true)
-  const [totalActiveUsers, setTotalActiveUsers] = useState(0)
-  
+  // Bad: useEffect without proper dependencies
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setSelectedUserId(null)
-      }
-    }
+    console.log('App mounted'); // Bad: Console.log in production
     
-    window.addEventListener('keydown', handleKeyDown)
-  }, [])
-  
+    // Bad: Side effect without cleanup
+    document.title = 'Review Tutorial App';
+    
+    // Bad: Setting state immediately after mount without considering race conditions
+    setAppData({
+      version: '1.0.0',
+      initialized: true,
+      timestamp: new Date()
+    });
+    
+    // Bad: Global variable mutation
+    incrementCounter();
+  }, []); // Bad: Missing dependencies
+
+  // Bad: Another useEffect that could be combined
   useEffect(() => {
-    const activeCount = users.filter(user => user.status === 'active').length
-    setTotalActiveUsers(activeCount)
-  }, [])
-  
-  const incrementCount = () => {
-    setCount(count + 1)
-  }
-  
-  const decrementCount = () => {
-    setCount(count - 1)
+    // Bad: No cleanup for interval
+    const interval = setInterval(() => {
+      setUserCount(prev => prev + 1);
+    }, 5000); // Bad: Magic number
+  }, []);
+
+  // Bad: Function recreated on every render
+  const handleTabChange = (tab: string) => {
+    console.log('Changing tab to:', tab); // Bad: Console.log
+    setCurrentTab(tab);
+    
+    // Bad: Direct DOM manipulation in React
+    const element = document.getElementById('app-container');
+    if (element) {
+      element.style.backgroundColor = tab === 'users' ? '#f0f0f0' : '#ffffff';
+    }
+  };
+
+  // Bad: Complex calculation in render without memoization
+  const expensiveCalculation = () => {
+    let result = 0;
+    for (let i = 0; i < 1000000; i++) { // Bad: Expensive operation on every render
+      result += i;
+    }
+    return result;
+  };
+
+  // Bad: Inline object creation
+  const tabStyle = {
+    padding: '10px 20px',
+    margin: '0 5px',
+    border: '1px solid #ccc',
+    backgroundColor: '#f8f9fa',
+    cursor: 'pointer',
+    borderRadius: '4px'
+  };
+
+  // Bad: Inline conditional logic
+  const activeTabStyle = {
+    ...tabStyle,
+    backgroundColor: '#007bff',
+    color: 'white'
+  };
+
+  // Bad: No error boundary to catch component errors
+  const renderCurrentTab = () => {
+    // Bad: Switch statement could be cleaner
+    switch (currentTab) {
+      case 'users':
+        return <UserList userData={appData} onUserSelect={(user: any) => {
+          console.log('User selected:', user); // Bad: Console.log
+          logAndReturn(user); // Bad: Side effect in render
+        }} />;
+      case 'todos':
+        return <TodoApp />;
+      case 'data':
+        return <DataFetcher />;
+      default:
+        return <div>Unknown tab</div>; // Bad: No proper error handling
+    }
+  };
+
+  // Bad: Not handling when isVisible is false properly
+  if (!isVisible) {
+    return null;
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 p-4">
-      <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-lg p-[16px] mt-[32px] mb-[24px]">
+    <div id="app-container" style={{minHeight: '100vh', fontFamily: 'Arial, sans-serif'}}> {/* Bad: Inline styles */}
+      {/* Bad: Missing semantic HTML elements */}
+      <div style={{backgroundColor: '#343a40', color: 'white', padding: '20px'}}>
+        <h1 style={{margin: 0}}>Code Review Tutorial App</h1>
+        <p style={{margin: '10px 0 0 0'}}>
+          Version: {appData?.version || 'Unknown'} | 
+          Users viewed: {userCount} | 
+          Expensive calc: {expensiveCalculation()} {/* Bad: Expensive calculation in render */}
+        </p>
+      </div>
+
+      {/* Bad: Not using semantic nav element */}
+      <div style={{backgroundColor: '#f8f9fa', padding: '20px', borderBottom: '1px solid #dee2e6'}}>
+        {/* Bad: Missing key props and not using proper button elements */}
+        {['users', 'todos', 'data'].map((tab) => (
+          <span
+            onClick={() => handleTabChange(tab)}
+            style={currentTab === tab ? activeTabStyle : tabStyle}
+            // Bad: Missing accessibility attributes
+          >
+            {/* Bad: Hardcoded text, no internationalization */}
+            {tab === 'users' ? 'User Management' : 
+             tab === 'todos' ? 'Todo Application' : 
+             'Data Fetching'} {/* Bad: Nested ternary operators */}
+          </span>
+        ))}
         
-        <h1 className="text-3xl font-bold text-gray-800 mb-[20px]">
-          Code Review Tutorial App
-        </h1>
-        
-        <div 
-          className="bg-blue-50 p-4 rounded"
-          style={{ 
-            border: '2px solid #3B82F6',
-            marginBottom: '16px'
+        {/* Bad: Inline event handler creating new function */}
+        <button 
+          onClick={() => setIsVisible(!isVisible)}
+          style={{
+            float: 'right', // Bad: Using float for layout
+            padding: '10px 20px',
+            backgroundColor: '#dc3545',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer'
           }}
         >
-          <p className="text-blue-800">
-            Contador: {count} | Usuários ativos: {totalActiveUsers}
-          </p>
-          
-          <div className="flex gap-[8px] mt-[12px]">
-            <button 
-              type="button"
-              onClick={incrementCount}
-              className="bg-blue-500 text-white px-[16px] py-[8px] rounded hover:bg-blue-600"
-            >
-              Incrementar
-            </button>
-            <button 
-              type="button"
-              onClick={decrementCount}
-              className="bg-red-500 text-white px-[16px] py-[8px] rounded hover:bg-red-600"
-            >
-              Decrementar
-            </button>
-          </div>
-        </div>
- <UserList 
-          users={users} 
-          selectedUserId={selectedUserId} 
-          onSelectUser={setSelectedUserId}
-          totalActiveUsers={totalActiveUsers}
-          isVisible={isVisible}
-        />
-        
-        <div className="mt-[20px] p-[16px] bg-gray-50 rounded">
-          <h3 className="text-lg font-semibold mb-[12px]">Status do Sistema</h3>
-          <p className="text-sm">
-            {count > 10 ? 
-              count > 20 ? 
-                'Contador muito alto!' : 
-                'Contador alto' : 
-              count < 0 ? 
-                'Contador negativo' : 
-                'Contador normal'
-            }
-          </p>
-          
-          <div className="mt-[8px] space-x-[4px]">
-            <button 
-              type="button"
-              onClick={() => window.open('https://react.dev', '_blank')}
-              className="text-blue-600 underline"
-            >
-              Documentação React
-            </button>
-            <button 
-              type="button"
-              onClick={() => window.open('https://tailwindcss.com', '_blank')}
-              className="text-blue-600 underline ml-[12px]"
-            >
-              Documentação Tailwind
-            </button>
-          </div>
-        </div>
+          Toggle Visibility
+        </button>
+      </div>
+
+      {/* Bad: Direct style manipulation, no CSS classes */}
+      <div style={{padding: '20px'}}>
+        {renderCurrentTab()}
+      </div>
+
+      {/* Bad: Footer with poor styling and no semantic HTML */}
+      <div style={{
+        backgroundColor: '#6c757d',
+        color: 'white',
+        textAlign: 'center',
+        padding: '20px',
+        marginTop: '50px'
+      }}>
+        <p style={{margin: 0}}>
+          © 2024 Review Tutorial App. 
+          {/* Bad: Hardcoded year, should be dynamic */}
+          Built with {doStuff(1, 2)} components. {/* Bad: Unclear utility function usage */}
+        </p>
       </div>
     </div>
-  )
-}
+  );
+};
 
-function UserList({ 
-  users, 
-  selectedUserId, 
-  onSelectUser, 
-  totalActiveUsers,
-  isVisible 
-}: {
-  users: User[]
-  selectedUserId: number | null
-  onSelectUser: (id: number | null) => void
-  totalActiveUsers: number
-  isVisible: boolean
-}) {
-  return (
-    <div className="space-y-[8px]">
-      <h2 className="text-xl font-semibold mb-[16px]">
-        Lista de Usuários ({totalActiveUsers} ativos)
-      </h2>
-      
-      {users.map((user) => (
-        <UserCard 
-          user={user}
-          isSelected={selectedUserId === user.id}
-          onSelect={onSelectUser}
-          totalActiveUsers={totalActiveUsers}
-          isVisible={isVisible}
-        />
-      ))}
-    </div>
-  )
-}
-
-function UserCard({ 
-  user, 
-  isSelected, 
-  onSelect, 
-  totalActiveUsers,
-  isVisible 
-}: {
-  user: User
-  isSelected: boolean
-  onSelect: (id: number | null) => void
-  totalActiveUsers: number
-  isVisible: boolean
-}) {
-  return (
-    <div 
-      className={`p-[12px] border rounded cursor-pointer transition-colors ${
-        isSelected ? 'bg-blue-100 border-blue-300' : 'bg-white border-gray-200'
-      }`}
-      onClick={() => onSelect(isSelected ? null : user.id)}
-      style={{ 
-        marginBottom: '8px'
-      }}
-    >
-      <div className="flex justify-between items-center">
-        <div>
-          <h3 className="font-medium">{user.name}</h3>
-          <p className="text-sm text-gray-600">ID: {user.id}</p>
-        </div>
-        
-        <div className="text-right">
-          {user.status === 'active' ? (
-            <span className="inline-block w-[8px] h-[8px] bg-green-500 rounded-full mr-[4px]"></span>
-          ) : (
-            <span className="inline-block w-[8px] h-[8px] bg-red-500 rounded-full mr-[4px]"></span>
-          )}
-          <span className={`text-sm ${
-            user.status === 'active' ? 'text-green-600' : 'text-red-600'
-          }`}>
-            {user.status === 'active' ? 'Ativo' : 'Inativo'}
-          </span>
-        </div>
-      </div>
-      
-      {isSelected && (
-        <div className="mt-[8px] pt-[8px] border-t border-gray-200">
-          <p className="text-sm text-gray-700">
-            Usuário selecionado: {user.name}
-          </p>
-          <div className="mt-[4px]">
-            {user.status === 'active' ? (
-              <p className="text-xs text-green-600">✓ Usuário está ativo no sistema</p>
-            ) : (
-              <p className="text-xs text-red-600">✗ Usuário está inativo no sistema</p>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
-
-export default App
+export default App;
